@@ -1,1 +1,3 @@
 *.bak*
+plugins/main.weather
+plugins/rosakodu.dock
