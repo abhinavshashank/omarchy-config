@@ -1,0 +1,11 @@
+{
+  "dockEnabled": true,
+  "autohide": true,
+  "showFolderTitles": true,
+  "widgetsEnabled": true,
+  "widgetPosition": "left",
+  "dockWidgets": [
+    "omarchy.apps"
+  ],
+  "widgetSavedPositions": {}
+}
