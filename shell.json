@@ -19,7 +19,10 @@
           "id": "main.weather"
         },
         {
-          "id": "rosakodu.dock"
+          "id": "omarchy.spacer"
+        },
+        {
+          "id": "main.media"
         },
         {
           "id": "omarchy.system-update"
@@ -64,6 +67,18 @@
     "lock": 300,
     "screensaver": 150
   },
-  "plugins": [],
-  "version": 1
+  "plugins": [
+    {
+      "id": "main.nightlight"
+    }
+  ],
+  "version": 1,
+  "disabledPlugins": [
+    "omarchy.media",
+    "omarchy.nightlight"
+  ],
+  "cloneSourceRestores": [
+    "main.media",
+    "main.nightlight"
+  ]
 }
