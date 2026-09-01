@@ -1,6 +1,6 @@
 {
   "bar": {
-    "centerAnchor": "omarchy.clock",
+    "centerAnchor": "main.clock",
     "layout": {
       "center": [
         {
@@ -9,8 +9,34 @@
         {
           "format": "dddd HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
-          "id": "omarchy.clock",
-          "verticalFormat": "HH\n—\nmm"
+          "id": "main.clock",
+          "verticalFormat": "HH\n—\nmm",
+          "worldClocks": [
+            {
+              "label": "Local",
+              "timeZone": "local"
+            },
+            {
+              "label": "UTC",
+              "timeZone": "UTC"
+            },
+            {
+              "label": "New York",
+              "timeZone": "America/New_York"
+            },
+            {
+              "label": "London",
+              "timeZone": "Europe/London"
+            },
+            {
+              "label": "Tokyo",
+              "timeZone": "Asia/Tokyo"
+            },
+            {
+              "label": "Sydney",
+              "timeZone": "Australia/Sydney"
+            }
+          ]
         },
         {
           "id": "omarchy.keyboard-layout"
