@@ -79,6 +79,8 @@ Panel {
   property date now: new Date()
   readonly property var worldClockEntries: Model.worldClockEntries(now, worldClocks)
 
+  // WorldClock debug removed for production
+
 
   // Guarded so the widget renders before the bar is injected (the bar-widget
   // contract instantiates it bare).
@@ -552,12 +554,12 @@ Panel {
           Item {
             visible: root.worldClockEntries.length > 0
             width: parent.width
-            height: visible ? worldClockColumn.height : 0
+            height: visible ? worldClockColumn.height + Style.space(10) : 0
 
             Column {
               id: worldClockColumn
               anchors.horizontalCenter: parent.horizontalCenter
-              width: gridColumn.width
+              width: parent.width
               spacing: Style.space(6)
               y: Style.space(10)
 
@@ -644,7 +646,7 @@ Panel {
                           text: modelData.time
                           color: root.contentForeground
                           font.family: root.contentFontFamily
-                          font.pixelSize: Style.font.title
+                          font.pixelSize: 14
                           font.bold: true
                         }
 

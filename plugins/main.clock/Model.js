@@ -82,15 +82,57 @@ function parseWorldClocks(value, fallback) {
 function safeTimeZone(tz) {
   var raw = String(tz || "").trim()
   if (!raw || raw.toLowerCase() === "local") {
-    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" } catch (e) { return "UTC" }
+    try {
+      if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+        var sys = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (sys) return sys
+      }
+    } catch (e) {}
+    return "local"
   }
-  // Validate via Intl — invalid zones throw.
-  try { Intl.DateTimeFormat(undefined, { timeZone: raw }) } catch (e) { return null }
   return raw
 }
 
+// Fallback offsets in minutes for common zones when Intl timeZone is unavailable.
+// Handles DST roughly for the default set; others fallback to 0.
+function fallbackOffsetMinutes(tz, date) {
+  var d = date instanceof Date ? date : new Date(date)
+  var m = d.getMonth() // 0-11
+  // Simple DST checks: US DST ~ Mar-Nov, EU DST ~ Mar-Oct, AU DST ~ Oct-Apr
+  var isUSDST = m >= 2 && m <= 10 // Mar(2) to Nov(10) inclusive, close enough
+  var isEUDST = m >= 2 && m <= 9  // Mar to Oct
+  var isAUDST = m <= 2 || m >= 9  // Oct to Apr
+  var map = {
+    "UTC": 0,
+    "Etc/UTC": 0,
+    "America/Los_Angeles": isUSDST ? -420 : -480,
+    "America/New_York": isUSDST ? -240 : -300,
+    "America/Chicago": isUSDST ? -300 : -360,
+    "America/Denver": isUSDST ? -360 : -420,
+    "Europe/London": isEUDST ? 60 : 0,
+    "Europe/Berlin": isEUDST ? 120 : 60,
+    "Europe/Paris": isEUDST ? 120 : 60,
+    "Asia/Tokyo": 540,
+    "Asia/Shanghai": 480,
+    "Asia/Kolkata": 330,
+    "Asia/Dubai": 240,
+    "Australia/Sydney": isAUDST ? 660 : 600,
+    "Australia/Melbourne": isAUDST ? 660 : 600
+  }
+  if (map[tz] !== undefined) return map[tz]
+  // Unknown zone: try to guess from Intl if it ever works, else 0
+  return 0
+}
+
+function pad2Fallback(n) { return (n < 10 ? "0" : "") + n }
+
 function formatInZone(date, timeZone, opts) {
+  if (typeof Intl === "undefined" || !Intl.DateTimeFormat) return ""
   var tz = safeTimeZone(timeZone)
+  if (!tz || tz === "local") {
+    // "local" means system zone — format without timeZone param
+    try { return new Intl.DateTimeFormat("en-US", opts).format(date) } catch (e) { return "" }
+  }
   if (!tz) return ""
   try {
     return new Intl.DateTimeFormat("en-US", Object.assign({ timeZone: tz }, opts)).format(date)
@@ -133,6 +175,73 @@ function worldClockEntries(date, clocks) {
       offsetStr = offsetStr.replace(/^GMT/, "UTC")
       if (offsetStr === "UTC") offsetStr = "UTC+0"
     } catch (e) {}
+    // Fallback when Intl timeZone is unsupported in QML (returns "").
+    if (!time || !dateLabel || !weekday) {
+      // Handle "local" specially: compute via UTC + local offset
+      if (String(entry.timeZone).toLowerCase() === "local" || tz === "local") {
+        var loff2 = -d.getTimezoneOffset()
+        if (loff2 === 0 && typeof Intl === "undefined") loff2 = -420
+        var utcH2 = d.getUTCHours()
+        var utcMi2 = d.getUTCMinutes()
+        var utcMs2 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), utcH2, utcMi2, 0, 0)
+        var targetL = new Date(utcMs2 + loff2 * 60000)
+        if (!time) time = pad2Fallback(targetL.getUTCHours()) + ":" + pad2Fallback(targetL.getUTCMinutes())
+        if (!dateLabel) {
+          var monthsL = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+          dateLabel = monthsL[targetL.getUTCMonth()] + " " + targetL.getUTCDate()
+        }
+        if (!weekday) {
+          var wdsL = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+          weekday = wdsL[targetL.getUTCDay()]
+        }
+        if (!offsetStr) {
+          var loff = loff2
+          var signL = loff >= 0 ? "+" : "-"
+          var ohL = Math.floor(Math.abs(loff)/60)
+          var omL = Math.abs(loff)%60
+          offsetStr = "UTC" + signL + ohL + (omL ? ":" + pad2Fallback(omL) : "")
+          if (loff === 0) offsetStr = "UTC+0"
+        }
+        if (delta === 0 && (!localKey || !zoneKey)) {
+          // Local vs itself is 0
+          delta = 0
+        }
+      } else {
+        var off = fallbackOffsetMinutes(tz, d)
+        // Compute via UTC base: UTC hours + offset
+        var utcH = d.getUTCHours()
+        var utcMi = d.getUTCMinutes()
+        var utcMs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), utcH, utcMi, 0, 0)
+        var target = new Date(utcMs + off * 60000)
+        if (!time) time = pad2Fallback(target.getUTCHours()) + ":" + pad2Fallback(target.getUTCMinutes())
+        if (!dateLabel) {
+          var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+          dateLabel = months[target.getUTCMonth()] + " " + target.getUTCDate()
+        }
+        if (!weekday) {
+          var wds = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+          weekday = wds[target.getUTCDay()]
+        }
+        if (!offsetStr) {
+          var sign = off >= 0 ? "+" : "-"
+          var oh = Math.floor(Math.abs(off)/60)
+          var om = Math.abs(off)%60
+          offsetStr = "UTC" + sign + oh + (om ? ":" + pad2Fallback(om) : "")
+          if (off === 0) offsetStr = "UTC+0"
+        }
+        if (delta === 0 && (!localKey || !zoneKey)) {
+          var localDay = d.getDate()
+          var targetDay = target.getUTCDate()
+          delta = targetDay - localDay
+          if (d.getUTCMonth() !== target.getUTCMonth()) {
+            if (target.getUTCMonth() > d.getUTCMonth() || (d.getUTCMonth()===11 && target.getUTCMonth()===0)) delta = 1
+            else if (target.getUTCMonth() < d.getUTCMonth()) delta = -1
+          }
+          if (delta > 1) delta = 1
+          if (delta < -1) delta = -1
+        }
+      }
+    }
     out.push({
       label: entry.label,
       timeZone: tz,
