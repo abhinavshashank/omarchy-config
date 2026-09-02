@@ -268,42 +268,43 @@ Panel {
             }
           }
 
-          // Primary detail
+          // Primary detail — prominent, high contrast
           Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             width: parent.width - Style.space(24)
-            height: Style.space(64)
+            height: Style.space(78)
             radius: Style.cornerRadius
-            color: Style.selectedStateColor(root.contentForeground, Color.accent)
-            border.width: Style.spacing.hairline
-            border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.08)
+            color: Color.accent
+            border.width: 0
 
             Row {
               anchors.fill: parent
-              anchors.leftMargin: Style.space(16)
-              anchors.rightMargin: Style.space(16)
+              anchors.leftMargin: Style.space(18)
+              anchors.rightMargin: Style.space(18)
               spacing: Style.space(12)
 
               Column {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width * 0.55
-                Text { text: primaryData ? primaryData.label : ""; color: root.contentForeground; font.family: root.contentFontFamily; font.pixelSize: Style.font.body; font.bold: true }
-                Text { text: primaryData ? primaryData.timeZone + " · " + primaryData.offset : ""; color: Qt.darker(root.contentForeground, 1.5); font.family: root.contentFontFamily; font.pixelSize: Style.font.caption; elide: Text.ElideRight; width: parent.width }
+                spacing: 2
+                Text { text: primaryData ? primaryData.label : ""; color: "white"; font.family: root.contentFontFamily; font.pixelSize: Style.font.title; font.bold: true }
+                Text { text: primaryData ? primaryData.timeZone + " · " + primaryData.offset : ""; color: Qt.rgba(1,1,1,0.85); font.family: root.contentFontFamily; font.pixelSize: Style.font.caption; elide: Text.ElideRight; width: parent.width }
               }
               Item { width: Style.space(8); height: 1 }
               Column {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width * 0.45 - Style.space(8)
+                spacing: 1
                 Text {
                   anchors.right: parent.right
                   text: primaryData ? primaryData.time : ""
-                  color: root.contentForeground; font.family: root.contentFontFamily; font.pixelSize: 32; font.bold: true
+                  color: "white"; font.family: root.contentFontFamily; font.pixelSize: 30; font.bold: true
                   horizontalAlignment: Text.AlignRight; width: parent.width
                 }
                 Text {
                   anchors.right: parent.right
                   text: primaryData ? primaryData.weekday + " " + primaryData.dateLabel + (primaryData.delta!==0 ? (primaryData.delta>0?" +"+primaryData.delta+"d":" "+primaryData.delta+"d"):"") : ""
-                  color: primaryData && primaryData.delta!==0 ? Color.accent : Qt.darker(root.contentForeground, 1.5)
+                  color: Qt.rgba(1,1,1,0.85)
                   font.family: root.contentFontFamily; font.pixelSize: Style.font.caption; horizontalAlignment: Text.AlignRight; width: parent.width
                 }
               }

@@ -35,11 +35,43 @@
         {
           "id": "main.worldclock",
           "primary": {
-            "label": "Dubai",
-            "timeZone": "Asia/Dubai",
-            "lat": 25.2048,
-            "lon": 55.2708
-          }
+            "label": "San Francisco",
+            "timeZone": "America/Los_Angeles",
+            "lat": 37.7749,
+            "lon": -122.4194
+          },
+          "worldClocks": [
+            {
+              "label": "New York",
+              "lat": 40.7128,
+              "lon": -74.006,
+              "timeZone": "America/New_York"
+            },
+            {
+              "label": "London",
+              "lat": 51.5074,
+              "lon": -0.1278,
+              "timeZone": "Europe/London"
+            },
+            {
+              "label": "Tokyo",
+              "lat": 35.6895,
+              "lon": 139.6917,
+              "timeZone": "Asia/Tokyo"
+            },
+            {
+              "label": "Sydney",
+              "lat": -33.8688,
+              "lon": 151.2093,
+              "timeZone": "Australia/Sydney"
+            },
+            {
+              "label": "Dubai",
+              "lat": 25.2048,
+              "lon": 55.2708,
+              "timeZone": "Asia/Dubai"
+            }
+          ]
         },
         {
           "id": "omarchy.workspaces"
