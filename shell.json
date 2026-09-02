@@ -33,7 +33,13 @@
           "id": "omarchy.menu"
         },
         {
-          "id": "main.worldclock"
+          "id": "main.worldclock",
+          "primary": {
+            "label": "Dubai",
+            "timeZone": "Asia/Dubai",
+            "lat": 25.2048,
+            "lon": 55.2708
+          }
         },
         {
           "id": "omarchy.workspaces"

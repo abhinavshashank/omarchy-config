@@ -42,6 +42,44 @@ Panel {
       root.bar.shell.updateEntryInline(root.moduleName, e)
   }
 
+  function persistWorldClocks(clocks) {
+    var e = { id: root.moduleName }
+    for (var k in root.settings) if (k!=="id") e[k]=root.settings[k]
+    e["worldClocks"] = clocks
+    root.settings = e
+    if (root.hostWidget && "settings" in root.hostWidget) root.hostWidget.settings = e
+    if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline==="function")
+      root.bar.shell.updateEntryInline(root.moduleName, e)
+  }
+
+  function addCity() {
+    var label = (addLabelField.text || "").trim()
+    var tz = (addTzField.text || "").trim()
+    if (!label || !tz) return
+    // Validate tz via Model
+    var test = Model.normalizeWorldClockEntry({ label: label, timeZone: tz })
+    if (!test) return
+    var clocks = worldClocks.slice()
+    // Prevent duplicate label+tz
+    for (var i=0;i<clocks.length;i++) if (clocks[i].label===label && clocks[i].timeZone===tz) return
+    if (clocks.length >= 8) return
+    clocks.push(test)
+    persistWorldClocks(clocks)
+    addLabelField.text = ""
+    addTzField.text = ""
+    addLabelField.forceActiveFocus()
+  }
+
+  function removeCity(index) {
+    var clocks = worldClocks.slice()
+    if (index <0 || index>=clocks.length) return
+    if (clocks.length <=1) return
+    var removed = clocks.splice(index,1)[0]
+    persistWorldClocks(clocks)
+    // If primary was removed, reset to first
+    if (primary.label===removed.label && primary.timeZone===removed.timeZone) setPrimary(clocks[0])
+  }
+
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
@@ -102,21 +140,39 @@ Panel {
             border.width: Style.spacing.hairline
             border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.10)
 
+            // World map background
+            Rectangle {
+              anchors.fill: parent
+              radius: parent.radius
+              color: Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.04)
+              Text {
+                anchors.centerIn: parent
+                text: "🌍  WORLD MAP"
+                color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.18)
+                font.family: root.contentFontFamily
+                font.pixelSize: 32
+                font.letterSpacing: 4
+                font.bold: true
+              }
+            }
             // Subtle grid lines
             Canvas {
+              id: gridCanvas
               anchors.fill: parent
+              onWidthChanged: requestPaint()
+              onHeightChanged: requestPaint()
+              Component.onCompleted: requestPaint()
               onPaint: {
                 var ctx = getContext("2d")
+                if (!ctx) return
                 ctx.clearRect(0,0,width,height)
-                ctx.strokeStyle = Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.07)
+                ctx.strokeStyle = Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.09)
                 ctx.lineWidth = 1
-                // Vertical meridians
-                for (var x=0;x<width;x+=width/6) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,height); ctx.stroke() }
-                // Horizontal
-                for (var y=0;y<height;y+=height/4) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(width,y); ctx.stroke() }
-                // Equator highlight
-                ctx.strokeStyle = Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.25)
-                ctx.beginPath(); ctx.moveTo(0,height/2); ctx.lineTo(width,height/2); ctx.stroke()
+                for (var x=0;x<width;x+=width/6) { ctx.beginPath(); ctx.moveTo(Math.round(x)+0.5,0); ctx.lineTo(Math.round(x)+0.5,height); ctx.stroke() }
+                for (var y=0;y<height;y+=height/4) { ctx.beginPath(); ctx.moveTo(0,Math.round(y)+0.5); ctx.lineTo(width,Math.round(y)+0.5); ctx.stroke() }
+                ctx.strokeStyle = Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.30)
+                ctx.lineWidth = 1.5
+                ctx.beginPath(); ctx.moveTo(0,Math.round(height/2)+0.5); ctx.lineTo(width,Math.round(height/2)+0.5); ctx.stroke()
               }
             }
 
@@ -305,6 +361,121 @@ Panel {
                   Text {
                     text: modelData.weekday + " " + modelData.dateLabel + (modelData.delta!==0 ? (modelData.delta>0?" +"+modelData.delta+"d":" "+modelData.delta+"d"):"")
                     color: modelData.delta!==0 ? Color.accent : Qt.darker(root.contentForeground, 1.5); font.family: root.contentFontFamily; font.pixelSize: Style.font.caption
+                  }
+                }
+              }
+            }
+          }
+
+          // Manage cities — add / remove
+          Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - Style.space(24)
+            height: manageCol.implicitHeight + Style.space(16)
+            radius: Style.cornerRadius
+            color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.05)
+            border.width: Style.spacing.hairline
+            border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.08)
+
+            Column {
+              id: manageCol
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.top: parent.top
+              anchors.margins: Style.space(12)
+              spacing: Style.space(8)
+
+              Text {
+                text: "MANAGE CITIES"
+                color: Qt.darker(root.contentForeground, 1.5)
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.caption
+                font.letterSpacing: 1.5
+                font.bold: true
+              }
+
+              Row {
+                width: parent.width
+                spacing: Style.space(8)
+
+                TextField {
+                  id: addLabelField
+                  width: parent.width * 0.32
+                  placeholderText: "City (e.g. Paris)"
+                  font.family: root.contentFontFamily
+                  onAccepted: addTzField.forceActiveFocus()
+                  Keys.onPressed: function(e){ if(e.key===Qt.Key_Return||e.key===Qt.Key_Enter) addCity() }
+                }
+                TextField {
+                  id: addTzField
+                  width: parent.width * 0.48
+                  placeholderText: "TimeZone (e.g. Europe/Paris)"
+                  font.family: root.contentFontFamily
+                  onAccepted: addCity()
+                  Keys.onPressed: function(e){ if(e.key===Qt.Key_Return||e.key===Qt.Key_Enter) addCity() }
+                }
+                PanelActionButton {
+                  id: addBtn
+                  iconText: "󰐕"
+                  tooltipText: "Add city"
+                  foreground: root.contentForeground
+                  fontFamily: root.contentFontFamily
+                  onClicked: addCity()
+                }
+              }
+
+              Text {
+                width: parent.width
+                text: "Examples: America/New_York, Europe/London, Asia/Tokyo, Australia/Sydney, Asia/Kolkata, Asia/Dubai"
+                color: Qt.darker(root.contentForeground, 1.7)
+                font.family: root.contentFontFamily
+                font.pixelSize: Style.font.caption - 1
+                wrapMode: Text.WordWrap
+                visible: true
+              }
+
+              // Current cities with remove
+              Column {
+                width: parent.width
+                spacing: Style.space(4)
+                Repeater {
+                  model: root.entries
+                  delegate: Rectangle {
+                    required property var modelData
+                    required property int index
+                    width: parent.width
+                    height: Style.space(28)
+                    radius: Style.cornerRadius
+                    color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.04)
+                    border.width: Style.spacing.hairline
+                    border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.06)
+
+                    Row {
+                      anchors.fill: parent
+                      anchors.leftMargin: Style.space(8)
+                      anchors.rightMargin: Style.space(8)
+                      spacing: Style.space(8)
+                      Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - removeBtn.width - Style.space(8)
+                        text: modelData.label + " · " + modelData.timeZone
+                        color: root.contentForeground
+                        font.family: root.contentFontFamily
+                        font.pixelSize: Style.font.caption
+                        elide: Text.ElideRight
+                      }
+                      PanelActionButton {
+                        id: removeBtn
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconText: "󰅖"
+                        tooltipText: "Remove"
+                        foreground: root.contentForeground
+                        fontFamily: root.contentFontFamily
+                        enabled: root.entries.length > 1
+                        opacity: enabled ? 1 : 0.35
+                        onClicked: removeCity(index)
+                      }
+                    }
                   }
                 }
               }
