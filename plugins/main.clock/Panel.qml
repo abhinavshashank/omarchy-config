@@ -72,15 +72,6 @@ Panel {
   readonly property var weekdays: Model.weekdayOrder(weekStart)
   readonly property var weeks: Model.monthGrid(viewYear, viewMonth, weekStart, todayKey)
 
-  // ---- World Clock. Lives beside the calendar grid. Configured via
-  //      shell.json bar entry: { id:"main.clock", worldClocks:[{label:"Tokyo", timeZone:"Asia/Tokyo"}] }
-  //      "local" resolves to the system's timezone.
-  readonly property var worldClocks: Model.parseWorldClocks(setting("worldClocks", null), Model.DEFAULT_WORLD_CLOCKS)
-  property date now: new Date()
-  readonly property var worldClockEntries: Model.worldClockEntries(now, worldClocks)
-
-  // WorldClock debug removed for production
-
 
   // Guarded so the widget renders before the bar is injected (the bar-widget
   // contract instantiates it bare).
@@ -133,9 +124,7 @@ Panel {
   }
 
   function refresh() {
-    var n = new Date()
-    root.today = n
-    root.now = n
+    root.today = new Date()
     root.goToToday()
   }
 
@@ -237,7 +226,6 @@ Panel {
     id: clock
     precision: SystemClock.Minutes
     onDateChanged: {
-      root.now = clock.date
       if (Model.keyForDate(clock.date) === String(root.todayKey)) return
       var followToday = root.viewingCurrentMonth
       root.today = clock.date
@@ -544,137 +532,6 @@ Panel {
                   text: "Memento Mori"
                   fontFamily: root.contentFontFamily
                 }
-              }
-            }
-          }
-
-          // ---- World Clock. World times for the configured zones, kept
-          //      alongside the calendar so the popup answers "what time is it
-          //      there?" without leaving where you already are.
-          Item {
-            visible: root.worldClockEntries.length > 0
-            width: parent.width
-            height: visible ? worldClockColumn.height + Style.space(10) : 0
-
-            Column {
-              id: worldClockColumn
-              anchors.horizontalCenter: parent.horizontalCenter
-              width: parent.width
-              spacing: Style.space(6)
-              y: Style.space(10)
-
-              Text {
-                textFormat: Text.PlainText
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "WORLD CLOCK"
-                color: Qt.darker(root.contentForeground, 1.6)
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                font.letterSpacing: 2
-                font.bold: true
-              }
-
-              Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: parent.width
-                height: Style.spacing.hairline
-                color: root.contentForeground
-                opacity: 0.08
-              }
-
-              Column {
-                width: parent.width
-                spacing: Style.space(4)
-
-                Repeater {
-                  model: root.worldClockEntries
-
-                  Rectangle {
-                    required property var modelData
-                    width: parent.width
-                    height: Style.space(36)
-                    radius: Style.cornerRadius
-                    color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.06)
-                    border.width: Style.spacing.hairline
-                    border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.08)
-
-                    Row {
-                      anchors.fill: parent
-                      anchors.leftMargin: Style.space(12)
-                      anchors.rightMargin: Style.space(12)
-                      spacing: Style.space(8)
-
-                      Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width * 0.5
-                        spacing: 1
-
-                        Text {
-                          textFormat: Text.PlainText
-                          width: parent.width
-                          text: modelData.label
-                          color: root.contentForeground
-                          font.family: root.contentFontFamily
-                          font.pixelSize: Style.font.body
-                          font.bold: true
-                          elide: Text.ElideRight
-                        }
-
-                        Text {
-                          textFormat: Text.PlainText
-                          width: parent.width
-                          text: modelData.timeZone + (modelData.offset ? " · " + modelData.offset : "")
-                          color: Qt.darker(root.contentForeground, 1.6)
-                          font.family: root.contentFontFamily
-                          font.pixelSize: Style.font.caption
-                          elide: Text.ElideRight
-                        }
-                      }
-
-                      Item { width: Style.space(4); height: 1 }
-
-                      Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width * 0.5 - Style.space(4)
-                        spacing: 1
-
-                        Text {
-                          textFormat: Text.PlainText
-                          anchors.right: parent.right
-                          width: parent.width
-                          horizontalAlignment: Text.AlignRight
-                          text: modelData.time
-                          color: root.contentForeground
-                          font.family: root.contentFontFamily
-                          font.pixelSize: 14
-                          font.bold: true
-                        }
-
-                        Text {
-                          textFormat: Text.PlainText
-                          anchors.right: parent.right
-                          width: parent.width
-                          horizontalAlignment: Text.AlignRight
-                          text: modelData.weekday + " " + modelData.dateLabel + (modelData.delta !== 0 ? (modelData.delta > 0 ? " +" + modelData.delta + "d" : " " + modelData.delta + "d") : "")
-                          color: modelData.delta !== 0 ? Color.accent : Qt.darker(root.contentForeground, 1.5)
-                          font.family: root.contentFontFamily
-                          font.pixelSize: Style.font.caption
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-
-              Text {
-                visible: root.worldClocks.length > 0
-                width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                text: "Edit in shell.json → main.clock → worldClocks"
-                color: Qt.darker(root.contentForeground, 2.0)
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                wrapMode: Text.WordWrap
               }
             }
           }

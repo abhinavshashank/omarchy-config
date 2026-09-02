@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "main.worldclock",
+  "name": "World Clock",
+  "version": "1.0.0",
+  "author": "abhinavshashank",
+  "description": "World clock bar pill showing saved city time, with beautiful world map panel",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "World Clock",
+    "description": "Shows saved city time in bar; click for world map and all zones",
+    "category": "Time",
+    "allowMultiple": false,
+    "defaultSection": "left"
+  }
+}
